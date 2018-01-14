@@ -1,0 +1,89 @@
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <vector>
+#include <math.h>
+using namespace cv;
+int lowH = 0, HiH = 256, lowS = 0, HiS = 256, lowV = 0, HiV = 256;
+void createtrackbars()
+{	namedWindow("trackbar", WINDOW_AUTOSIZE);
+	
+	createTrackbar("H_MIN", "trackbar", &lowH, 256);
+	createTrackbar("H_MAX", "trackbar", &HiH, 256);
+
+	createTrackbar("S_MIN", "trackbar", &lowS, 256);
+	createTrackbar("S_MAX", "trackbar", &HiS, 256);
+
+	createTrackbar("V_MIN", "trackbar", &lowV, 256);
+	createTrackbar("V_MAX", "trackbar", &HiV, 256);
+
+};
+/*void useMorphOps(Mat &thresh)
+{
+	Mat erodeElement = getStructuringElement(MORPH_RECT, Size(1,1));
+	Mat dilateElement = getStructuringElement(MORPH_RECT, Size(1,1));
+	erode(thresh, thresh, erodeElement);
+	erode(thresh, thresh, erodeElement);
+	
+	dilate(thresh, thresh, dilateElement);
+	dilate(thresh, thresh, dilateElement);
+};*/
+
+int main()
+{
+	Point2f vec[4], corners[4];
+	Mat img, perspective;
+	img = imread("C:/Users/Komp/Desktop/c++/Processing/test1/arizona-highway.jpg", CV_LOAD_IMAGE_UNCHANGED);
+	if (!img.data) return -1;
+
+	Rect ROI = Rect(0, 742, 1920, 372);
+	Mat imgROI = img(ROI);
+
+	Mat lambda = Mat::zeros(imgROI.rows, imgROI.cols, imgROI.type());
+
+	vec[0] = Point2f(665, 0);
+	vec[1] = Point2f(1200, 0);
+	vec[2] = Point2f(1919, imgROI.rows - 1);
+	vec[3] = Point2f(0, imgROI.rows - 1);
+
+	corners[0] = Point2f(9 * imgROI.cols / 48, 0);
+	corners[1] = Point2f(14 * imgROI.cols / 24 - 1, 0);
+	corners[2] = Point2f(13 * imgROI.cols / 24 - 1, imgROI.rows - 1);
+	corners[3] = Point2f(imgROI.cols / 3, imgROI.rows - 1);
+
+
+	lambda = getPerspectiveTransform(vec, corners);
+	warpPerspective(imgROI, perspective, lambda, perspective.size());
+	Size size(535, 800);
+	resize(perspective, perspective, size);
+	Rect ROI2 = Rect(100, 0, 190, 800);
+	Mat perspective1 = perspective(ROI2);
+
+	//namedWindow("ROIautostrada", WINDOW_AUTOSIZE);
+	//imshow("ROIautostrada", imgROI);
+	
+	Size size1(1920 / 2, 1114 / 2);
+	resize(img, img, size1);
+	
+	namedWindow("thres", WINDOW_AUTOSIZE);
+	
+	namedWindow("Rzutowanie1", WINDOW_AUTOSIZE);
+	imshow("Rzutowanie1", perspective1);
+	
+	createtrackbars();
+	Mat HSV, threshold;
+	cvtColor(perspective1, HSV, COLOR_BGR2HSV);
+	
+	while(1) {
+		
+		inRange(HSV, Scalar(lowH, lowS, lowV), Scalar(HiH, HiS, HiV), threshold);
+		// useMorphOps(threshold);
+		imshow("thres", threshold);
+		waitKey(30);
+		
+	}
+	
+	
+	waitKey(0);
+	return 0;
+}
+
